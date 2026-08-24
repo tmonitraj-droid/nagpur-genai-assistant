@@ -1,32 +1,51 @@
 import os
-from google import genai
+import google.generativeai as genai
+import streamlit as st
 
-client = genai.Client(
-    api_key=os.environ.get("GEMINI_API_KEY"),
+# 1. Setup the Web Page Layout
+st.set_page_config(page_title="Nagpur AI Marketing Assistant", page_icon="🍊", layout="centered")
+
+# 2. Configure the Gemini API Key
+genai.configure(api_key=os.environ.get("GEMINI_API_KEY", "YOUR_API_KEY_HERE"))
+
+# 3. Define the System Instructions
+system_instruction = (
+    "You are a specialized Gen AI Marketing Assistant built for small business owners in Nagpur, India. "
+    "Your job is to help local shops create digital marketing posts, slogans, and product descriptions. "
+    "Always offer your responses in a clear layout, providing options in English, Hindi, and Marathi "
+    "to cater to the local Vidarbha audience. Keep your tone encouraging, professional, and culturally relevant."
 )
 
-tools = [
-    {
-        'type': 'google_search',
-    },
-]
-
-generation_config = {
-    'temperature': 1,
-    'max_output_tokens': 65536,
-    'top_p': 0.95,
-    'thinking_level': 'high',
-}
-
-interaction = client.interactions.create(
-    model='models/gemini-3-flash-preview',
-    input='',
-    system_instruction='You are a specialized Gen AI Marketing Assistant built for small business owners in Nagpur, India. Your job is to help local shops create digital marketing posts, slogans, and product descriptions. Always offer your responses in a clear layout, providing options in English, Hindi, and Marathi to cater to the local Vidarbha audience. Keep your tone encouraging, professional, and culturally relevant.
-',
-    tools=tools,
-    generation_config=generation_config,
+# 4. Initialize the Gemini Model
+model = genai.GenerativeModel(
+    model_name="gemini-1.5-flash",
+    system_instruction=system_instruction
 )
 
-print(interaction.steps[-1])
+# 5. Build the Web Interface Layout (UI)
+st.title("🍊 Nagpur Small Business AI Assistant")
+st.subheader("Create local marketing material instantly in English, Hindi, & Marathi")
+st.write("Designed for the Google Cloud Gen AI Academy Challenge")
 
+# User Input Text Box on the Web Page
+user_prompt = st.text_area(
+    "What kind of marketing help do you need today?",
+    placeholder="e.g., Write a WhatsApp message to sell fresh Sitabuldi clothing items..."
+)
 
+# Clickable Button
+if st.button("Generate Marketing Post"):
+    if user_prompt.strip() == "":
+        st.warning("Please enter a prompt first!")
+    else:
+        with st.spinner("Gemini is crafting your posts..."):
+            try:
+                # Call the API securely using a state-changing POST pattern
+                response = model.generate_content(user_prompt)
+                
+                st.success("Generated Options successfully!")
+                st.markdown("### 📋 Your Marketing Content Layout")
+                st.write(response.text)
+                
+            except Exception as e:
+                st.error(f"Error connecting to Gemini API: {e}")
